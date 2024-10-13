@@ -20,16 +20,28 @@ def get_cpu_type():
                 break
     return cpu_info.get('vendor', 'Unknown')
 
+ef remove_db_lock(install_path):
+    """Remove database lock file if it exists."""
+    db_lock = os.path.join(install_path, "var/lib/pacman/db.lck")
+    if os.path.exists(db_lock):
+        with misc.raised_privileges():
+            os.remove(db_lock)
+
 
 def run():
-    cpu_type = get_cpu_type()
     if 'GenuineIntel' in cpu_type:
-        print("Intel CPU detected... removing amd microcode")
-        libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', 'amd-ucode'])
+        print("Intel CPU detected... removing AMD microcode")
+        try:
+            libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', 'amd-ucode'])
+        except Exception as e:
+            print(f"Failed to remove AMD microcode: {e}")
 
     elif 'AuthenticAMD' in cpu_type:
-        print("AMD CPU detected... removing intel microcode")
-        libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', 'intel-ucode'])
+        print("AMD CPU detected... removing Intel microcode")
+        try:
+            libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', 'intel-ucode'])
+        except Exception as e:
+            print(f"Failed to remove Intel microcode: {e}")
     else:
         print("Unknown CPU type")
 
