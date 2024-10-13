@@ -68,15 +68,6 @@ def run():
             libcalamares.utils.target_env_call(
                 ['pacman', '-R', '--noconfirm', 'virtualbox-guest-utils'])
 
-    # Remove ZFS packages
-    zfs_pool_list = libcalamares.globalstorage.value("zfsPoolInfo")
-    if not zfs_pool_list:
-        print('ZFS not in use')
-        libcalamares.utils.target_env_call(
-                ['pacman', '-Rns', '--noconfirm', 'zfs-kmod'])
-    else:
-        print(zfs_pool_list)
-
     # Packagechooser outcome / remove LibreOffice l10n
     packages = libcalamares.globalstorage.value("packagechooser_packagechooserq")
 
