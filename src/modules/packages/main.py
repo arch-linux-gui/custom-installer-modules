@@ -5,6 +5,12 @@ import subprocess
 import libcalamares
 
 
+# TODO:
+# 1) refactor code - break up into functions
+# 2) add functions for Packagechooser
+# 3) add and sanitize variables for cpu_type and and write a function to remove specific microcode on the basis of cpu_type
+
+
 def run():
     """ Package removal module. Live only packages, surplus language packs. """
 
