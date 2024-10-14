@@ -10,6 +10,8 @@ import libcalamares
 # 2) add functions for Packagechooser
 # 3) add and sanitize variables for cpu_type and and write a function to remove specific microcode on the basis of cpu_type - done
 # 4) add function to remove nvidia packages
+# 5) remove packages from old packages module & rename currect packages to packages_alg
+# 6)
 
 def get_cpu_type():
     # Get the CPU type (Intel or AMD).
@@ -103,18 +105,20 @@ def remove_nvidia_packages():
     "GeForce GTX 1080, "
     "GeForce GTX 1080 Ti")
 
-     if any(gpu for gpu in supported_nvidia_gpus_rtx.split(", ") if any(gpu in info for info in  libcalamares.globalstorage.insert("nvidia_gpu_name"))):
+    nvidia_gpu_info = libcalamares.globalstorage.value("nvidia_gpu_name")
+
+     if "NVIDIA" in nvidia_gpu_info and any(gpu in nvidia_gpu_info for gpu in supported_nvidia_gpus_rtx.split(", ")):
         try:
             libcalamares.utils.target_env_call(['pacman', '-S', '--noconfirm', 'nvidia-open'])
             print("nvidia-open package installed successfully.")
         except Exception as e:
             libcalamares.utils.warning(f"Failed to install nvidia-open: {e}")
 
-    elif any(gpu for gpu in supported_nvidia_gpus_gtx.split(", ") if any(gpu in info for info in  libcalamares.globalstorage.insert("nvidia_gpu_name"))):
+    elif "NVIDIA" in nvidia_gpu_info and any(gpu in nvidia_gpu_info for gpu in supported_nvidia_gpus_gtx.split(", ")):
         try:
             libcalamares.utils.target_env_call(['pacman', '-S', '--noconfirm', 'nvidia'])
             print("nvidia package installed successfully.")
         except Exception as e:
             libcalamares.utils.warning(f"Failed to install nvidia: {e}")
     else:
-        print("No supported NVIDIA GPU detected. Skipping installation.")
+        print("No supported NVIDIA GPU detected. Skipping installation of NVIDIA drivers.")
