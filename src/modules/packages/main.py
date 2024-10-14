@@ -11,7 +11,7 @@ import libcalamares
 # 3) add and sanitize variables for cpu_type and and write a function to remove specific microcode on the basis of cpu_type
 
 def get_cpu_type():
-    """Get the CPU type (Intel or AMD)."""
+    # Get the CPU type (Intel or AMD).
     cpu_info = {}
     with open('/proc/cpuinfo', 'r') as cpuinfo_file:
         for line in cpuinfo_file:
@@ -20,8 +20,8 @@ def get_cpu_type():
                 break
     return cpu_info.get('vendor', 'Unknown')
 
-ef remove_db_lock(install_path):
-    """Remove database lock file if it exists."""
+def remove_db_lock(install_path):
+    # Remove database lock file if it exists.
     db_lock = os.path.join(install_path, "var/lib/pacman/db.lck")
     if os.path.exists(db_lock):
         with misc.raised_privileges():
@@ -29,6 +29,7 @@ ef remove_db_lock(install_path):
 
 
 def run():
+    # Remove microcode packages
     if 'GenuineIntel' in cpu_type:
         print("Intel CPU detected... removing AMD microcode")
         try:
