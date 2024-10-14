@@ -1,0 +1,6 @@
+---
+type:       "job"
+name:       "hardware"
+interface:  "python"
+script:     "main.py"
+noconfig:   true
