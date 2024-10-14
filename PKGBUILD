@@ -1,4 +1,4 @@
-pkgname=alg-theme-cala-config
+pkgname=alg-installer-custom-modules
 destname="/etc/calamares"
 pkgver=24.04
 pkgrel=1
