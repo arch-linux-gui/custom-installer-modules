@@ -1,6 +1,6 @@
 ---
 type:       "job"
-name:       "hardware"
+name:       "hardware_detection"
 interface:  "python"
 script:     "main.py"
 noconfig:   true
