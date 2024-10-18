@@ -3,3 +3,4 @@ type:       "job"
 name:       "packages_remover"
 interface:  "python"
 script:     "main.py"
+noconfig: true
