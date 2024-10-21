@@ -12,6 +12,8 @@ import libcalamares
 # 4) add function to remove nvidia packages - port nvidia_removal from iso-profiles to here
 # 5) remove packages from old packages module & rename currect packages to packages_alg
 # 6) move get_cpu_type() to hardware module (needs testing, hence this function remains here until testing)
+# 7) implement old nvidia_package_removal as failsafe, based on grub boot mode
+# 8) modify remove_livecd_packages() to accomodate themed/pure values from GS, and remove packages accordingly
 
 def get_cpu_type():
     # Get the CPU type (Intel or AMD).
@@ -83,6 +85,40 @@ def remove_livecd_packages():
                 print("Could not remove package " + pkg)
 
     print('Live CD packages removed')
+
+def get_iso_bootmode():
+    if bootmode:
+        return bootmode
+    else:
+        libcalamares.utils.warning("No kernel_boot_mode found in Calamares GlobalStorage.")
+        return None
+
+
+def remove_nvidia_drivers():
+    # Remove NVIDIA drivers if 'free' is selected.
+    selection = get_iso_bootmode()
+    libcalamares.utils.debug(f"#################################\nSelection was {selection}\n#################################")
+
+    if selection == "free":
+        try:
+            result = libcalamares.utils.check_target_env_call(
+                ["pacman", "-Rns", "--noconfirm", "nvidia", "nvidia-utils", "nvidia-settings"]
+            )
+            if result["return_code"] == 0:
+                libcalamares.utils.debug("NVIDIA drivers removed successfully.")
+            else:
+                libcalamares.utils.warning(f"Failed to remove NVIDIA drivers with error: {result['stdout']}")
+        except Exception as e:
+            libcalamares.utils.warning(f"Exception occurred while removing NVIDIA drivers: {e}")
+    elif selection == "nonfree":
+        try:
+            with open("/usr/lib/modprobe.d/nvidia-utils.conf", "w") as kernel_boot_mode:
+                kernel_boot_mode.write("blacklist nouveau\n")
+            libcalamares.utils.debug("#################################\nWe keep NVIDIA onboard\n#################################")
+        except IOError as e:
+            libcalamares.utils.warning(f"Error writing to /usr/lib/modprobe.d/nvidia-utils.conf: {e}")
+    else:
+        libcalamares.utils.warning("No valid selection found.")
 
 
 

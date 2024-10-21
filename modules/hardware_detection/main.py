@@ -41,6 +41,16 @@ def get_gpu_driver_name():
     except KeyError:
         libcalamares.utils.warning("Failed to parse GPU driver string")
 
+def get_iso_bootmode(param, default=None):
+    with open("/proc/cmdline", "r") as kernel_boot_mode:
+        for cmd_param in kernel_boot_mode.read().split():
+            if cmd_param.startswith(f"{param}="):
+                return cmd_param.split("=")[1]
+            elif cmd_param == param:
+                return param
+    return default
+
 def insert_value_in_cala_globalstorage():
     libcalamares.globalstorage.insert("nvidia_gpu_name", nvidia_gpu_info)
     libcalamares.globalstorage.insert("gpuDrivers", gpu_drivers)
+    libcalamares.globalstorage.insert("kernel_boot_mode", kernel_boot_mode)
