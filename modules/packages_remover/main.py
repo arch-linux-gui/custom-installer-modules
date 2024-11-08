@@ -4,6 +4,8 @@ import os
 import subprocess
 import libcalamares
 
+# This module is important to the custom codebase, because other modules depend on it to add or remove packages as required. Any atomic operation with pacman shall take place in this module only.
+
 
 # TODO:
 # 1) refactor code - break up into functions - done
@@ -14,6 +16,7 @@ import libcalamares
 # 6) move get_cpu_type() to hardware module (needs testing, hence this function remains here until testing)
 # 7) implement old nvidia_package_removal as failsafe, based on grub boot mode
 # 8) modify remove_livecd_packages() to accomodate themed/pure values from GS, and remove packages accordingly
+# 9) add function to remove packages from edition_chooser module
 
 def get_cpu_type():
     # Get the CPU type (Intel or AMD).
