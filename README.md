@@ -4,7 +4,7 @@ Custom Installer Modules for ALG aim to add additional functionality to the inst
 
 
 ## Tests
-Tests are in /tests.
+Tests are now in /tests.
 
 Run tests with `PYTHONPATH=./src python3 -m unittest discover -s tests`
 
