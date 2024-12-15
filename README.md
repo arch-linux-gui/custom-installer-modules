@@ -2,9 +2,11 @@
 
 Custom Installer Modules for ALG aim to add additional functionality to the installer specific to ALG. The modules are to be installed in the same directory as other modules, which is <code>etc/calamares</code>. For prototyping, the modules will first be written in python, and then C++/Qt when the features are finalised.
 
-Tests are in /src/tests.
 
-Run tests with `PYTHONPATH=./src python3 -m unittest discover -s src/tests`
+## Tests
+Tests are now in /tests.
+
+Run tests with `PYTHONPATH=./src python3 -m unittest discover -s tests`
 
 ## How to use modules?
 
@@ -12,6 +14,7 @@ Ideally, modules are invoked in <code>settings.conf</code>. Some modules have a 
 
 ## Todo - Migrate Shell Processes
 
-Currently there are certain script in ALG's code that reside in </code>/usb/local/bin</code>, which are run by calamares shellprocess. These have to migrate here.
+Currently there are certain script in ALG's code that reside in </code>/usb/local/bin</code>, which are run by calamares shellprocess. These have to be migrated here.
 
-Also, a module for choosing editions needs to be made that will pass values to <i>packages_remover</i>.
+## New Modules are being written
+UPDATE: A module for choosing editions has been made that will pass values to <i>packages_remover</i>. However some functions still need to be rewritten depending on the results from the bare-metal tests.
