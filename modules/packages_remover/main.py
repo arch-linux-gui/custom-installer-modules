@@ -9,121 +9,132 @@ import libcalamares
 
 # TODO:
 # 1) refactor code - break up into functions - done
-# 2) add functions for Packagechooser
+# 2) add functions for Packagechooser - done
 # 3) add and sanitize variables for cpu_type and and write a function to remove specific microcode on the basis of cpu_type - done
 # 4) add function to remove nvidia packages - port nvidia_removal from iso-profiles to here
 # 5) remove packages from old packages module & rename currect packages to packages_alg
-# 6) move get_cpu_type() to hardware module (needs testing, hence this function remains here until testing)
+# 6) move get_cpu_type() to hardware module (needs testing, hence this function remains here until testing) - done
 # 7) implement old nvidia_package_removal as failsafe, based on grub boot mode
 # 8) modify remove_livecd_packages() to accomodate themed/pure values from GS, and remove packages accordingly
 # 9) add function to remove packages from edition_chooser module
 
-def get_cpu_type():
-    # Get the CPU type (Intel or AMD).
-    cpu_info = {}
-    with open('/proc/cpuinfo', 'r') as cpuinfo_file:
-        for line in cpuinfo_file:
-            if line.startswith('vendor_id'):
-                cpu_info['vendor'] = line.split(':')[1].strip()
-                break
-    return cpu_info.get('vendor', 'Unknown')
-
 def remove_db_lock(install_path):
-    # Remove database lock file if it exists.
+    """Remove pacman database lock file if it exists."""
     db_lock = os.path.join(install_path, "var/lib/pacman/db.lck")
     if os.path.exists(db_lock):
-        with misc.raised_privileges():
+        with libcalamares.utils.raised_privileges():
             os.remove(db_lock)
 
-def remove_cpu_microcode_package():
-    # Remove microcode packages
-    if 'GenuineIntel' in cpu_type:
-        print("Intel CPU detected... removing AMD microcode")
-        try:
+def remove_cpu_microcode_packages():
+    """Remove CPU microcode packages based on CPU vendor."""
+    cpu_vendor = libcalamares.globalstorage.value("cpu_vendor")
+    
+    if not cpu_vendor:
+        libcalamares.utils.warning("CPU vendor information not found in global storage")
+        return
+
+    try:
+        if 'GenuineIntel' in cpu_vendor:
             libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', 'amd-ucode'])
-        except Exception as e:
-            print(f"Failed to remove AMD microcode: {e}")
-
-    elif 'AuthenticAMD' in cpu_type:
-        print("AMD CPU detected... removing Intel microcode")
-        try:
+        elif 'AuthenticAMD' in cpu_vendor:
             libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', 'intel-ucode'])
-        except Exception as e:
-            print(f"Failed to remove Intel microcode: {e}")
-    else:
-        print("Unknown CPU type")
+        else:
+            libcalamares.utils.debug(f"Unknown CPU vendor: {cpu_vendor}")
+    except Exception as e:
+        libcalamares.utils.warning(f"Failed to remove microcode package: {e}")
 
-def remove_fw_packages():
+def remove_firmware_packages():
+    """Remove firmware packages based on boot type."""
     fw_type = libcalamares.globalstorage.value("firmwareType")
+    
     if fw_type == 'bios':
-        print('Removing EFI packages')
-        libcalamares.utils.target_env_call(
-            ['pacman', '-Rns', '--noconfirm', 'efibootmgr', 'refind-efi'])
-
-def remove_livecd_packages():
-    print("Removing live ISO packages")
-    live_cd_packages = ["calamares",
-                        "boost",
-                        "solid",
-                        "yaml-cpp",
-                        "kpmcore",
-                        "hwinfo",
-                        "qt5-svg",
-                        "polkit-qt5",
-                        "plasma-framework",
-                        "qt5-xmlpatterns",
-                        "squashfs-tools",
-                        "linux-atm",
-                        "livecd-sounds",
-                        "alg-theme-cala-config",
-                        "mkinitcpio-archiso",
-                        "arch-install-scripts",
-                        "ckbcomp",
-                        "mkinitcpio-openswap"]
-    for pkg in live_cd_packages:
-            try:
-                libcalamares.utils.target_env_call(
-                    ['pacman', '-Rns', '--noconfirm', '{!s}' .format(pkg)])
-            except:
-                print("Could not remove package " + pkg)
-
-    print('Live CD packages removed')
-
-def get_iso_bootmode():
-    if bootmode:
-        return bootmode
-    else:
-        libcalamares.utils.warning("No kernel_boot_mode found in Calamares GlobalStorage.")
-        return None
-
+        try:
+            libcalamares.utils.target_env_call(
+                ['pacman', '-Rns', '--noconfirm', 'efibootmgr', 'refind-efi']
+            )
+        except Exception as e:
+            libcalamares.utils.warning(f"Failed to remove EFI packages: {e}")
 
 def remove_nvidia_drivers():
-    # Remove NVIDIA drivers if 'free' is selected.
-    selection = get_iso_bootmode()
-    libcalamares.utils.debug(f"#################################\nSelection was {selection}\n#################################")
+    """Remove NVIDIA drivers based on boot mode and GPU detection."""
+    kernel_boot_mode = libcalamares.globalstorage.value("kernel_boot_mode")
+    
+    if not kernel_boot_mode:
+        libcalamares.utils.warning("No kernel_boot_mode found in global storage")
+        return
 
-    if selection == "free":
+    if kernel_boot_mode == "free":
         try:
-            result = libcalamares.utils.check_target_env_call(
+            libcalamares.utils.target_env_call(
                 ["pacman", "-Rns", "--noconfirm", "nvidia", "nvidia-utils", "nvidia-settings"]
             )
-            if result["return_code"] == 0:
-                libcalamares.utils.debug("NVIDIA drivers removed successfully.")
-            else:
-                libcalamares.utils.warning(f"Failed to remove NVIDIA drivers with error: {result['stdout']}")
+            libcalamares.utils.debug("NVIDIA drivers removed successfully")
         except Exception as e:
-            libcalamares.utils.warning(f"Exception occurred while removing NVIDIA drivers: {e}")
-    elif selection == "nonfree":
+            libcalamares.utils.warning(f"Failed to remove NVIDIA drivers: {e}")
+    
+    elif kernel_boot_mode == "nonfree":
         try:
-            with open("/usr/lib/modprobe.d/nvidia-utils.conf", "w") as kernel_boot_mode:
-                kernel_boot_mode.write("blacklist nouveau\n")
-            libcalamares.utils.debug("#################################\nWe keep NVIDIA onboard\n#################################")
+            with open("/usr/lib/modprobe.d/nvidia-utils.conf", "w") as f:
+                f.write("blacklist nouveau\n")
+            libcalamares.utils.debug("Nouveau driver blacklisted for NVIDIA")
         except IOError as e:
-            libcalamares.utils.warning(f"Error writing to /usr/lib/modprobe.d/nvidia-utils.conf: {e}")
-    else:
-        libcalamares.utils.warning("No valid selection found.")
+            libcalamares.utils.warning(f"Failed to blacklist nouveau: {e}")
 
+def remove_livecd_packages():
+    """Remove packages that are only needed in the live environment."""
+    # Preserve the existing package list
+    live_cd_packages = [
+        "calamares", "boost", "solid", "yaml-cpp", "kpmcore",
+        "hwinfo", "qt5-svg", "polkit-qt5", "plasma-framework",
+        "qt5-xmlpatterns", "squashfs-tools", "linux-atm",
+        "livecd-sounds", "alg-theme-cala-config",
+        "mkinitcpio-archiso", "arch-install-scripts",
+        "ckbcomp", "mkinitcpio-openswap"
+    ]
 
+    for pkg in live_cd_packages:
+        try:
+            libcalamares.utils.target_env_call(['pacman', '-Rns', '--noconfirm', pkg])
+        except Exception as e:
+            libcalamares.utils.warning(f"Could not remove package {pkg}: {e}")
+
+def handle_packagechooser_packages():
+    """Handle packages selected via PackageChooser module."""
+    selected_packages = libcalamares.globalstorage.value("packagechooser_packages")
+    
+    if not selected_packages:
+        return
+    
+    try:
+        # Install selected packages
+        libcalamares.utils.target_env_call(
+            ['pacman', '-S', '--noconfirm'] + selected_packages
+        )
+    except Exception as e:
+        libcalamares.utils.warning(f"Failed to install selected packages: {e}")
+
+def run():
+    """
+    Main entry point for the packages module.
+    Handles all package-related operations based on global storage values.
+    """
+    # Get install path
+    install_path = libcalamares.globalstorage.value("rootMountPoint")
+    
+    if not install_path:
+        return "No install path specified", False
+
+    # Remove pacman db lock if it exists
+    remove_db_lock(install_path)
+
+    # Perform all package operations
+    remove_cpu_microcode_packages()
+    remove_firmware_packages()
+    remove_nvidia_drivers()
+    remove_livecd_packages()
+    handle_packagechooser_packages()
+
+    return None
 
 # TODO: 4
 # def remove_nvidia_packages():
