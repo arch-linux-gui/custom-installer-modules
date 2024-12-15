@@ -185,3 +185,29 @@ def _set_xfce_theme(edition, theme_config):
         subprocess.run(["sh", "-c", cmd], check=True)
     except subprocess.CalledProcessError as e:
         libcalamares.utils.warning(f"Error setting XFCE theme: {e}")
+
+def run():
+    """
+    Main entry point for the edition chooser module.
+    Sets up the system according to the chosen edition.
+    """
+    # Get current desktop environment
+    desktop = desktop_version()
+    if not desktop:
+        return "Failed to determine desktop environment", False
+
+    # Get edition type
+    edition = get_edition_version()
+    libcalamares.utils.debug(f"Detected desktop: {desktop}, edition: {edition}")
+
+    # Store values in global storage for other modules
+    libcalamares.globalstorage.insert("desktop_environment", desktop)
+    libcalamares.globalstorage.insert("edition_type", edition)
+
+    # Set system theme
+    try:
+        set_system_theme()
+    except Exception as e:
+        return f"Failed to set system theme: {e}", False
+
+    return None
