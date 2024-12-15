@@ -1,5 +1,6 @@
 ---
 type:       "job"
-name:       "packages"
+name:       "edition_chooser"
 interface:  "python"
 script:     "main.py"
+noconfig:   true
