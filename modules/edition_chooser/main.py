@@ -14,9 +14,9 @@ import libcalamares
 
 # #TODO:
 # 1) Based on packagechooser GS value, pass items to add/remove in packages_remover
-# 2) Set env variables
+# 2) Set env variables (desktop_version())- done
 # 3) Check config files based on chosen edition (get_edition_version()) - done
-# 4) Set configs (set_system_theme())
+# 4) Set configs (set_system_theme()) - done
 
 def desktop_version():
     """
@@ -114,4 +114,74 @@ def _get_xfce_edition():
         return "pure"
 
 def set_system_theme():
-    pass
+    """
+    Sets the system theme based on the chosen edition and desktop environment.
+    Uses appropriate tools for each desktop environment.
+    """
+    desktop = desktop_version()
+    edition = get_edition_version()
+    theme_config = libcalamares.globalstorage.value("theme_config")
+    
+    if not theme_config:
+        libcalamares.utils.warning("No theme configuration found in global storage")
+        return
+    
+    try:
+        if desktop == "kde":
+            _set_kde_theme(edition, theme_config)
+        elif desktop == "gnome":
+            _set_gnome_theme(edition, theme_config)
+        elif desktop == "xfce":
+            _set_xfce_theme(edition, theme_config)
+        else:
+            libcalamares.utils.warning(f"Unsupported desktop environment: {desktop}")
+    except Exception as e:
+        libcalamares.utils.warning(f"Error setting system theme: {e}")
+
+def _set_kde_theme(edition, theme_config):
+    """Helper function to set KDE theme."""
+    try:
+        if edition == "pure":
+            theme = "org.kde.breeze.desktop"
+            if theme_config.get("dark", False):
+                theme = "org.kde.breezedark.desktop"
+            subprocess.run(["lookandfeeltool", "--apply", theme], check=True)
+        else:
+            style = "Qogirlight"
+            window_decoration = "__aurorae__svg__Qogir-light-circle"
+            if theme_config.get("dark", False):
+                style = "Qogirdark"
+                window_decoration = "__aurorae__svg__Qogir-dark-circle"
+            
+            home = os.getenv("HOME")
+            cmd = f"plasma-apply-colorscheme {style} && kwriteconfig6 --file {home}/.config/kwinrc --group org.kde.kdecoration2 --key theme {window_decoration} && qdbus6 org.kde.KWin /KWin reconfigure"
+            subprocess.run(["sh", "-c", cmd], check=True)
+    except subprocess.CalledProcessError as e:
+        libcalamares.utils.warning(f"Error setting KDE theme: {e}")
+
+def _set_gnome_theme(edition, theme_config):
+    """Helper function to set GNOME theme."""
+    try:
+        if edition == "pure":
+            style = "prefer-dark" if theme_config.get("dark", False) else "prefer-light"
+            subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", style], check=True)
+        else:
+            style = "prefer-dark" if theme_config.get("dark", False) else "prefer-light"
+            shell = "Orchis-Red-Dark" if theme_config.get("dark", False) else "Orchis-Light"
+            cmd = f"gsettings set org.gnome.desktop.interface color-scheme {style} && gsettings set org.gnome.shell.extensions.user-theme name {shell}"
+            subprocess.run(["sh", "-c", cmd], check=True)
+    except subprocess.CalledProcessError as e:
+        libcalamares.utils.warning(f"Error setting GNOME theme: {e}")
+
+def _set_xfce_theme(edition, theme_config):
+    """Helper function to set XFCE theme."""
+    try:
+        if edition == "pure":
+            style = "Adwaita-dark" if theme_config.get("dark", False) else "Adwaita"
+        else:
+            style = "Qogir-Dark" if theme_config.get("dark", False) else "Qogir-Light"
+        
+        cmd = f"xfconf-query -c xsettings -p /Net/ThemeName -s {style} && xfconf-query -c xfwm4 -p /general/theme -s {style}"
+        subprocess.run(["sh", "-c", cmd], check=True)
+    except subprocess.CalledProcessError as e:
+        libcalamares.utils.warning(f"Error setting XFCE theme: {e}")
