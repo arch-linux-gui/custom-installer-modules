@@ -1,0 +1,2 @@
+# Ignore Files Generated from tests
+/tests/__pycache__
